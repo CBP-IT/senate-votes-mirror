@@ -1,0 +1,31 @@
+# Copies new Senate roll-call vote files from senate.gov into this repo every 10 minutes.
+# Public repo, so GitHub Actions minutes are free. Reads public files only; no secrets.
+name: Mirror Senate votes
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash mirror.sh
+      - name: Save what changed
+        run: |
+          git config user.name "senate-mirror"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A legislative last-checked.txt
+          # last-checked.txt alone doesn't need a commit, except after 30 quiet days, so GitHub
+          # keeps the schedule running (it pauses schedules in repos with no commits for 60 days).
+          if git diff --cached --quiet -- legislative && [ $(( $(date +%s) - $(git log -1 --format=%ct) )) -lt 2592000 ]; then
+            echo "No new votes."; exit 0
+          fi
+          git commit -qm "Senate votes as of $(cat last-checked.txt)"
+          git push
