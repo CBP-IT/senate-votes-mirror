@@ -14,9 +14,11 @@ BASE=${BASE:-https://www.senate.gov/legislative/LIS}
 year=$(date -u +%Y)
 congress=${CONGRESS:-$(( (year - 1789) / 2 + 1 ))}
 first_year=$(( 1789 + (congress - 1) * 2 ))
+refused=0
 sessions="1"; [ "$year" -gt "$first_year" ] && sessions="2 1"  # current session first, so new votes never wait behind backfill
 
 get() { # url, out-file. Writes only a real XML answer; returns non-zero otherwise.
+  [ "$refused" = 1 ] && return 1  # senate.gov already said slow down this run: ask for nothing more
   local tmp; tmp=$(mktemp)
   local code; code=$(curl -s --max-time 30 -A "$UA" -o "$tmp" -w '%{http_code}' "$1")
   sleep "$GAP"
@@ -26,7 +28,6 @@ get() { # url, out-file. Writes only a real XML answer; returns non-zero otherwi
   if [ "$code" = 403 ] || [ "$code" = 429 ]; then echo "senate.gov said slow down ($code); stopping until next run."; refused=1; fi
   return 1
 }
-refused=0
 
 fetched=0
 for s in $sessions; do
