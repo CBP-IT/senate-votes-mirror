@@ -3,7 +3,8 @@
 name: Mirror Senate votes
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # Minutes 3, 13, 23...: GitHub runs schedules late or skips them at busy times like :00.
+    - cron: "3-59/10 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
