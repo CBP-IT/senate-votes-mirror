@@ -14,7 +14,7 @@ BASE=${BASE:-https://www.senate.gov/legislative/LIS}
 year=$(date -u +%Y)
 congress=${CONGRESS:-$(( (year - 1789) / 2 + 1 ))}
 first_year=$(( 1789 + (congress - 1) * 2 ))
-sessions="1"; [ "$year" -gt "$first_year" ] && sessions="1 2"
+sessions="1"; [ "$year" -gt "$first_year" ] && sessions="2 1"  # current session first, so new votes never wait behind backfill
 
 get() { # url, out-file. Writes only a real XML answer; returns non-zero otherwise.
   local tmp; tmp=$(mktemp)
