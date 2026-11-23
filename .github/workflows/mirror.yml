@@ -34,7 +34,8 @@ jobs:
             echo "No new votes."; exit 0
           fi
           git commit -qm "Senate votes as of $(cat last-checked.txt)"
-          git push
+          # Someone may have changed the repo while this run was copying; add our files on top.
+          git pull -q --rebase origin main && git push
       - name: Start the next run in about 10 minutes
         if: always() && github.ref == 'refs/heads/main'
         env:

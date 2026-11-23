@@ -21,8 +21,12 @@ get() { # url, out-file. Writes only a real XML answer; returns non-zero otherwi
   local code; code=$(curl -s --max-time 30 -A "$UA" -o "$tmp" -w '%{http_code}' "$1")
   sleep "$GAP"
   if [ "$code" = 200 ] && grep -q "$3" "$tmp"; then mkdir -p "$(dirname "$2")"; mv "$tmp" "$2"; return 0; fi
-  rm -f "$tmp"; echo "  $code for ${1#$BASE/}"; return 1
+  rm -f "$tmp"; echo "  $code for ${1#$BASE/}"
+  # 403/429 means senate.gov wants us to slow down: stop asking for the rest of this run.
+  if [ "$code" = 403 ] || [ "$code" = 429 ]; then echo "senate.gov said slow down ($code); stopping until next run."; refused=1; fi
+  return 1
 }
+refused=0
 
 fetched=0
 for s in $sessions; do
@@ -37,11 +41,11 @@ for s in $sessions; do
   for n in $(seq 1 "$latest"); do
     f="$dir/vote_${congress}_${s}_$(printf %05d "$n").xml"
     [ -s "$f" ] && continue
-    [ "$fetched" -ge "$MAX" ] && break
+    [ "$fetched" -ge "$MAX" ] || [ "$refused" = 1 ] && break
     get "$BASE/roll_call_votes/vote${congress}${s}/$(basename "$f")" "$f" "<roll_call_vote" && fetched=$((fetched + 1))
   done
   # Re-read the newest vote each run: senate.gov sometimes corrects a file soon after a vote.
-  if [ "$latest" -gt 0 ]; then
+  if [ "$latest" -gt 0 ] && [ "$refused" = 0 ]; then
     f="$dir/vote_${congress}_${s}_$(printf %05d "$latest").xml"
     get "$BASE/roll_call_votes/vote${congress}${s}/$(basename "$f")" "$f" "<roll_call_vote" || true
   fi
