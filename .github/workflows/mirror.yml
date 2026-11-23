@@ -1,5 +1,9 @@
 # Copies new Senate roll-call vote files from senate.gov into this repo every 10 minutes.
 # Public repo, so GitHub Actions minutes are free. Reads public files only; no secrets.
+#
+# Each run starts the next one about 10 minutes later (last step), because GitHub's own
+# schedule never fired for this repo. The schedule stays as a backup that restarts the chain
+# if it ever breaks. Pressing "Run workflow" by hand is safe: only one run goes at a time.
 name: Mirror Senate votes
 on:
   schedule:
@@ -8,13 +12,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write # to start the next run
 concurrency:
   group: mirror
   cancel-in-progress: false
 jobs:
   mirror:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - run: bash mirror.sh
@@ -30,3 +35,10 @@ jobs:
           fi
           git commit -qm "Senate votes as of $(cat last-checked.txt)"
           git push
+      - name: Start the next run in about 10 minutes
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 540
+          gh workflow run mirror.yml --ref main --repo "$GITHUB_REPOSITORY"
