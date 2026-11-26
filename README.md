@@ -6,11 +6,13 @@ A public copy of the U.S. Senate's roll-call vote files from
 
 A GitHub Actions job (`.github/workflows/mirror.yml`) runs `mirror.sh` every 10 minutes. It
 reads the current Congress's vote lists, fetches only votes it doesn't have yet, one file every
-2 seconds, and commits them. The files are the Senate's public record, unchanged.
+2 seconds, and commits them. Each run it also copies the Senate's floor schedule box
+(`legislative/schedule/floor_schedule.htm`, the plan for its next day in session). The files are
+the Senate's public record, unchanged.
 
 **Why it exists:** senate.gov turns away requests from Capitol SITREP's server (in Europe) and
 from Cloudflare, but answers GitHub. The server reads these files from
-`https://raw.githubusercontent.com/CBP-IT/senate-votes-mirror/main/` instead (setting
+`https://raw.githubusercontent.com/<owner>/<this repo>/main/` instead (setting
 `SENATE_MIRROR_URL`). The source lives in the Capitol SITREP repo under `infra/senate-mirror/`.
 
 - **Run it now:** Actions tab → Mirror Senate votes → Run workflow.
