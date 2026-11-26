@@ -5,6 +5,7 @@
 #
 # Polite by design: it reads the vote list for the current Congress (2 small files), then
 # fetches only votes it doesn't have yet, one at a time, 2 seconds apart, at most MAX per run.
+# It also copies the Senate's floor schedule box (one small page: its next day in session).
 set -uo pipefail
 MAX=${MAX:-150}
 GAP=${GAP:-2}
@@ -53,4 +54,12 @@ for s in $sessions; do
   mv "$menu.new" "$menu"
 done
 echo "Fetched $fetched new vote file(s)."
+
+# The floor schedule box: one small page, read every run (it changes the evening before a session day).
+sched="legislative/schedule/floor_schedule.htm"
+if get "https://www.senate.gov/$sched" "$sched.new" 'id="proceedings_schedule"'; then
+  mv "$sched.new" "$sched"
+else
+  rm -f "$sched.new"
+fi
 date -u +%FT%TZ > last-checked.txt
